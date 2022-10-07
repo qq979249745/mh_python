@@ -24,6 +24,6 @@ from app import view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', view.hello),
+    path('mh/', view.hello),
     path('upload/', view.upload),
 ]
