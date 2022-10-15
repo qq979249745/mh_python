@@ -1,13 +1,17 @@
 import json
 import os
 
+import numpy as np
 import torch
 from django.http import HttpResponse
 from django.shortcuts import render
+from paddle.dataset.image import cv2
+from paddleocr import PPStructure
 
 from detect.detect1 import Detect
 
 d = Detect()
+table_engine = PPStructure(show_log=False)
 
 
 def hello(request):
@@ -33,7 +37,23 @@ def upload(request):
             data['code'] = 1
             with torch.no_grad():
                 json_data = d.detect_binary(bytes)
+                result = table_engine(bytes)
+                res = result[0]['res']
+                print(result[0]['res'])
+                for v in json_data:
+                    if v['label'] != 'minBox':
+                        xyxy = v['xyxy']
+                        text = ''
+                        for r in res:
+                            text_region = r['text_region']
+                            x = (text_region[2][0] + text_region[0][0]) / 2
+                            y = (text_region[2][1] + text_region[0][1]) / 2
+                            if xyxy[2] > x > xyxy[0] and xyxy[3] > y > xyxy[1]:
+                                text += r['text']
+                                r['text']=''
+                        v['text'] = text
                 data['data'] = json_data
+
         else:
             data['code'] = 0
     return HttpResponse(json.dumps(data), content_type="application/json,charset=utf-8")
